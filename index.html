@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Temple Run Style</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { margin:0; overflow:hidden; background:black; font-family:Arial; }
+    canvas { display:block; margin:auto; background:#222; }
+    #menu {
+      position:absolute; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      color:white; text-align:center;
+    }
+    button {
+      padding:12px 25px;
+      font-size:18px;
+      background:orange;
+      border:none;
+      border-radius:6px;
+    }
+    #ui {
+      position:absolute;
+      top:10px; left:10px;
+      color:white;
+    }
+  </style>
+</head>
+<body>
+
+<div id="menu">
+  <h1>🏃 Temple Run Style</h1>
+  <button onclick="startGame()">Start Game</button>
+</div>
+
+<div id="ui" style="display:none;">
+  Score: <span id="score">0</span> |
+  Coins: <span id="coins">0</span>
+</div>
+
+<canvas id="game"></canvas>
+
+<script>
+let c = document.getElementById("game");
+let ctx = c.getContext("2d");
+c.width = 400;
+c.height = 600;
+
+// Load images (real look)
+let playerImg = new Image();
+playerImg.src = "https://i.imgur.com/4LGAZ8t.png";
+
+let ghostImg = new Image();
+ghostImg.src = "https://i.imgur.com/QZ7v6Yb.png";
+
+let coinImg = new Image();
+coinImg.src = "https://i.imgur.com/9yG6H0T.png";
+
+let obstacleImg = new Image();
+obstacleImg.src = "https://i.imgur.com/7yZ9F6K.png";
+
+let player, ghost, obstacles, coins, score, coinScore, speed, run;
+
+function startGame(){
+  document.getElementById("menu").style.display="none";
+  document.getElementById("ui").style.display="block";
+
+  player={x:180,y:500,w:40,h:40,vy:0,j:false};
+  ghost={x:180,y:560,w:40,h:40};
+  obstacles=[]; coins=[];
+  score=0; coinScore=0;
+  speed=5;
+  run=true;
+}
+
+// Controls
+c.addEventListener("touchstart", e=>{
+  if(!run) return;
+  let x=e.touches[0].clientX;
+  if(x<window.innerWidth/2) player.x-=40;
+  else player.x+=40;
+
+  if(!player.j){
+    player.vy=-12;
+    player.j=true;
+  }
+});
+
+// Spawn
+setInterval(()=>obstacles.push({x:Math.floor(Math.random()*10)*40,y:-40}),1000);
+setInterval(()=>coins.push({x:Math.floor(Math.random()*10)*40,y:-40}),1200);
+
+// Draw road
+function drawRoad(){
+  ctx.fillStyle="#333";
+  ctx.fillRect(0,0,400,600);
+
+  ctx.strokeStyle="white";
+  for(let i=0;i<600;i+=40){
+    ctx.beginPath();
+    ctx.moveTo(200,i+(Date.now()/5)%40);
+    ctx.lineTo(200,i+20+(Date.now()/5)%40);
+    ctx.stroke();
+  }
+}
+
+function update(){
+  ctx.clearRect(0,0,400,600);
+
+  if(run){
+    drawRoad();
+
+    // physics
+    player.y+=player.vy;
+    player.vy+=0.6;
+    if(player.y>=500){ player.y=500; player.j=false; }
+
+    // player
+    ctx.drawImage(playerImg, player.x, player.y, 40, 40);
+
+    // ghost
+    ctx.drawImage(ghostImg, ghost.x, ghost.y, 40, 40);
+
+    ghost.x += (player.x - ghost.x)*0.05;
+    ghost.y -= 0.01;
+
+    // obstacles
+    obstacles.forEach(o=>{
+      o.y+=speed;
+      ctx.drawImage(obstacleImg, o.x, o.y, 40, 40);
+
+      if(player.x<o.x+40 && player.x+40>o.x &&
+         player.y<o.y+40 && player.y+40>o.y){
+        run=false;
+        alert("Game Over\nScore:"+score+"\nCoins:"+coinScore);
+        location.reload();
+      }
+    });
+
+    // coins
+    coins.forEach((c,i)=>{
+      c.y+=speed;
+      ctx.drawImage(coinImg, c.x, c.y, 20, 20);
+
+      if(player.x<c.x+20 && player.x+40>c.x &&
+         player.y<c.y+20 && player.y+40>c.y){
+        coinScore++;
+        coins.splice(i,1);
+      }
+    });
+
+    obstacles=obstacles.filter(o=>o.y<600);
+    coins=coins.filter(c=>c.y<600);
+
+    score++;
+    document.getElementById("score").innerText=score;
+    document.getElementById("coins").innerText=coinScore;
+
+    if(score%200===0) speed+=0.5;
+  }
+
+  requestAnimationFrame(update);
+}
+
+update();
+</script>
+
+</body>
+</html>
