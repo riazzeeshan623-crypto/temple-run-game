@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Runner Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { margin:0; background:black; overflow:hidden; }
+    canvas { display:block; margin:auto; background:#111; }
+    #menu {
+      position:absolute;
+      top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      color:white;
+      text-align:center;
+    }
+    button {
+      padding:10px 20px;
+      font-size:20px;
+      background:orange;
+      border:none;
+    }
+  </style>
+</head>
+<body>
+
+<div id="menu">
+  <h1>🏃 Runner Game</h1>
+  <button onclick="startGame()">Start Game</button>
+</div>
+
+<canvas id="game"></canvas>
+
+<script>
+let canvas=document.getElementById("game");
+let ctx=canvas.getContext("2d");
+
+canvas.width=400;
+canvas.height=600;
+
+let player, obstacles, running=false;
+
+function startGame(){
+  document.getElementById("menu").style.display="none";
+  player={x:180,y:500,w:40,h:40};
+  obstacles=[];
+  running=true;
+}
+
+canvas.addEventListener("touchstart", e=>{
+  if(!running) return;
+  let x=e.touches[0].clientX;
+  if(x<window.innerWidth/2) player.x-=40;
+  else player.x+=40;
+});
+
+function spawn(){
+  obstacles.push({
+    x:Math.floor(Math.random()*10)*40,
+    y:-40
+  });
+}
+
+setInterval(spawn,1000);
+
+function update(){
+  ctx.clearRect(0,0,400,600);
+
+  if(running){
+    ctx.fillStyle="cyan";
+    ctx.fillRect(player.x,player.y,40,40);
+
+    ctx.fillStyle="red";
+    obstacles.forEach(o=>{
+      o.y+=5;
+      ctx.fillRect(o.x,o.y,40,40);
+
+      if(player.x<o.x+40 && player.x+40>o.x &&
+         player.y<o.y+40 && player.y+40>o.y){
+        alert("Game Over");
+        location.reload();
+      }
+    });
+  }
+
+  requestAnimationFrame(update);
+}
+
+update();
+</script>
+
+</body>
+</html>
