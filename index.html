@@ -1,81 +1,161 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Endless Runner Game</title>
+  <title>3D Runner Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: #111;
-      color: white;
-      font-family: Arial;
-      text-align: center;
+    body { margin:0; overflow:hidden; background:black; font-family:Arial; }
+    canvas { display:block; margin:auto; background:#111; }
+    #menu {
+      position:absolute; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      color:white; text-align:center;
     }
-    canvas {
-      background: linear-gradient(#222, #555);
-      display: block;
-      margin: auto;
-      touch-action: none;
+    button {
+      padding:10px 20px;
+      font-size:18px;
+      background:orange;
+      border:none;
+      border-radius:5px;
+    }
+    #ui {
+      position:absolute;
+      top:10px; left:10px;
+      color:white;
     }
   </style>
 </head>
 <body>
 
-<h2>🏃 Endless Runner</h2>
-<p>Tap / Arrow keys to move & jump</p>
+<div id="menu">
+  <h1>🏃 3D Runner Pro</h1>
+  <button onclick="startGame()">Start Game</button>
+</div>
 
-<canvas id="gameCanvas" width="400" height="600"></canvas>
+<div id="ui" style="display:none;">
+  Score: <span id="score">0</span> |
+  Coins: <span id="coins">0</span>
+</div>
+
+<canvas id="game"></canvas>
 
 <script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+let c = document.getElementById("game");
+let ctx = c.getContext("2d");
+c.width = 400;
+c.height = 600;
 
-let player = {
-  x: 180,
-  y: 500,
-  width: 40,
-  height: 40,
-  vy: 0,
-  gravity: 0.6,
-  jump: -12,
-  grounded: true
-};
+let player, obs, coins, score, coinScore, speed, run;
 
-let obstacles = [];
-let score = 0;
+function startGame(){
+  document.getElementById("menu").style.display="none";
+  document.getElementById("ui").style.display="block";
 
-// Draw player
-function drawPlayer() {
-  ctx.fillStyle = "cyan";
-  ctx.fillRect(player.x, player.y, player.width, player.height);
+  player = {x:180,y:500,w:40,h:40,vy:0,j:false};
+  obs=[]; coins=[];
+  score=0; coinScore=0; speed=5;
+  run=true;
 }
 
-// Draw obstacles
-function drawObstacles() {
-  ctx.fillStyle = "red";
-  obstacles.forEach(o => {
-    ctx.fillRect(o.x, o.y, o.width, o.height);
-  });
+c.addEventListener("touchstart", e=>{
+  if(!run) return;
+  let x=e.touches[0].clientX;
+  if(x<window.innerWidth/2) player.x-=40;
+  else player.x+=40;
+
+  if(!player.j){
+    player.vy=-12;
+    player.j=true;
+  }
+});
+
+function spawnObs(){
+  obs.push({x:Math.floor(Math.random()*10)*40,y:-40});
+}
+function spawnCoin(){
+  coins.push({x:Math.floor(Math.random()*10)*40,y:-40});
 }
 
-// Game loop
-function update() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+setInterval(spawnObs,1000);
+setInterval(spawnCoin,1500);
 
-  // Gravity
-  player.y += player.vy;
-  player.vy += player.gravity;
+function drawRoad(){
+  ctx.fillStyle="#222";
+  ctx.fillRect(0,0,400,600);
 
-  if (player.y >= 500) {
-    player.y = 500;
-    player.vy = 0;
-    player.grounded = true;
+  ctx.strokeStyle="white";
+  for(let i=0;i<600;i+=40){
+    ctx.beginPath();
+    ctx.moveTo(200,i+(Date.now()/5)%40);
+    ctx.lineTo(200,i+20+(Date.now()/5)%40);
+    ctx.stroke();
+  }
+}
+
+function update(){
+  ctx.clearRect(0,0,400,600);
+
+  if(run){
+    drawRoad();
+
+    // gravity
+    player.y+=player.vy;
+    player.vy+=0.6;
+    if(player.y>=500){ player.y=500; player.j=false; }
+
+    // player (3D style shadow)
+    ctx.fillStyle="rgba(0,0,0,0.5)";
+    ctx.fillRect(player.x+5,540,30,10);
+
+    ctx.fillStyle="cyan";
+    ctx.fillRect(player.x,player.y,40,40);
+
+    // obstacles
+    ctx.fillStyle="red";
+    obs.forEach((o,i)=>{
+      o.y+=speed;
+
+      ctx.fillRect(o.x,o.y,40,40);
+
+      if(player.x<o.x+40 && player.x+40>o.x &&
+         player.y<o.y+40 && player.y+40>o.y){
+        run=false;
+        alert("Game Over\nScore:"+score+"\nCoins:"+coinScore);
+        location.reload();
+      }
+    });
+
+    // coins
+    ctx.fillStyle="gold";
+    coins.forEach((c,i)=>{
+      c.y+=speed;
+
+      ctx.beginPath();
+      ctx.arc(c.x+10,c.y+10,10,0,Math.PI*2);
+      ctx.fill();
+
+      if(player.x<c.x+20 && player.x+40>c.x &&
+         player.y<c.y+20 && player.y+40>c.y){
+        coinScore++;
+        coins.splice(i,1);
+      }
+    });
+
+    obs=obs.filter(o=>o.y<600);
+    coins=coins.filter(c=>c.y<600);
+
+    score++;
+    document.getElementById("score").innerText=score;
+    document.getElementById("coins").innerText=coinScore;
+
+    if(score%200===0) speed+=0.5;
   }
 
-  // Spawn obstacles
-  if (Math.random() < 0.02) {
-    obstacles.push({
-      x: Math.random() * 360,
-      y: -40,
-      width:
+  requestAnimationFrame(update);
+}
+
+update();
+</script>
+
+</body>
+</html>
