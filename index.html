@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Endless Runner Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #111;
+      color: white;
+      font-family: Arial;
+      text-align: center;
+    }
+    canvas {
+      background: linear-gradient(#222, #555);
+      display: block;
+      margin: auto;
+      touch-action: none;
+    }
+  </style>
+</head>
+<body>
+
+<h2>🏃 Endless Runner</h2>
+<p>Tap / Arrow keys to move & jump</p>
+
+<canvas id="gameCanvas" width="400" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let player = {
+  x: 180,
+  y: 500,
+  width: 40,
+  height: 40,
+  vy: 0,
+  gravity: 0.6,
+  jump: -12,
+  grounded: true
+};
+
+let obstacles = [];
+let score = 0;
+
+// Draw player
+function drawPlayer() {
+  ctx.fillStyle = "cyan";
+  ctx.fillRect(player.x, player.y, player.width, player.height);
+}
+
+// Draw obstacles
+function drawObstacles() {
+  ctx.fillStyle = "red";
+  obstacles.forEach(o => {
+    ctx.fillRect(o.x, o.y, o.width, o.height);
+  });
+}
+
+// Game loop
+function update() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Gravity
+  player.y += player.vy;
+  player.vy += player.gravity;
+
+  if (player.y >= 500) {
+    player.y = 500;
+    player.vy = 0;
+    player.grounded = true;
+  }
+
+  // Spawn obstacles
+  if (Math.random() < 0.02) {
+    obstacles.push({
+      x: Math.random() * 360,
+      y: -40,
+      width:
